@@ -14,7 +14,7 @@ import org.springframework.data.mongodb.config.AbstractMongoClientConfiguration;
 import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
 
 @Configuration
-@EnableMongoRepositories(basePackages = "com.bt.wfmt.repository")
+@EnableMongoRepositories(basePackages = "uk.dioxic.wfmt.repository")
 public class MongoConfiguration extends AbstractMongoClientConfiguration {
 
     @Value("${spring.data.mongodb.uri}")

@@ -1,12 +1,5 @@
 package uk.dioxic.wfmt.repository;
 
-import uk.dioxic.wfmt.DataUtil;
-import uk.dioxic.wfmt.config.MongoConfiguration;
-import uk.dioxic.wfmt.model.Activity;
-import uk.dioxic.wfmt.model.OrderSummary;
-import uk.dioxic.wfmt.model.Order;
-import uk.dioxic.wfmt.model.ActivitySummary;
-import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -14,11 +7,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.mongodb.core.MongoOperations;
+import uk.dioxic.wfmt.DataUtil;
+import uk.dioxic.wfmt.config.MongoConfiguration;
+import uk.dioxic.wfmt.model.Activity;
+import uk.dioxic.wfmt.model.Activity.ActivityState;
+import uk.dioxic.wfmt.model.Order;
+import uk.dioxic.wfmt.model.Order.OrderPk;
 
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.as;
-import static org.assertj.core.api.Assertions.assertThat;
+import static uk.dioxic.wfmt.assertions.CustomAssertions.assertThat;
 
 @DataMongoTest
 @Import({DataUtil.class, MongoConfiguration.class})
@@ -53,38 +51,24 @@ public class ActivityRepositoryTest {
     }
 
     @Test
-    @DisplayName("Find by orderId")
-    void findByOrderId() {
-        Activity activity = dataUtil.defaultActivity()
-                .order(new OrderSummary(111,111,"Order1"))
-                .build();
-
-        mongoOps.insert(activity);
-
-        List<Activity> results = activityRepository.findByOrderOrderId(111);
-
-        assertThat(results).as("check query by orderId").containsExactly(activity);
-    }
-
-    @Test
-    @DisplayName("Find by orderId and circuitId")
-    void findByOrderIdAndCircuitId() {
+    @DisplayName("Find by orderPk")
+    void findByOrderPk() {
         Activity expected = dataUtil.defaultActivity()
                 .activityId("A1")
-                .order(new OrderSummary(111,111,"Order1"))
+                .orderPk(new OrderPk(111,111))
                 .build();
 
         Activity notExpected = dataUtil.defaultActivity()
                 .activityId("A2")
-                .order(new OrderSummary(111,222,"Order2"))
+                .orderPk(new OrderPk(111,222))
                 .build();
 
         mongoOps.insert(expected);
         mongoOps.insert(notExpected);
 
-        List<Activity> results = activityRepository.findByOrderOrderIdAndOrderCircuitId(111, 111);
+        List<Activity> results = activityRepository.findByOrderPk(new OrderPk(111,111));
 
-        assertThat(results).as("check query by orderId and circuitId").containsExactly(expected);
+        assertThat(results).as("check query by orderPk").containsExactly(expected);
     }
 
     @Test
@@ -102,26 +86,39 @@ public class ActivityRepositoryTest {
     @Test
     @DisplayName("New activity with related order")
     void saveNewActivityWithOrder() {
-        Order order = dataUtil.defaultOrder().build();
+        Order order = dataUtil.defaultOrder()
+                .name("Order1")
+                .build();
         mongoOps.insert(order);
 
         Activity activity = dataUtil.defaultActivity()
-                .order(new OrderSummary(order))
+                .activityId("A1")
+                .regionId(1)
+                .state(ActivityState.CLOSED)
+                .orderPk(order.getOrderPk())
                 .build();
 
         activityRepository.save(activity);
 
-        Activity actual = mongoOps.findById(activity.getActivityId(), Activity.class);
+        Activity actualActivity = mongoOps.findById(activity.getActivityId(), Activity.class);
 
-        assertThat(actual).as("check Activity was inserted").isEqualTo(activity);
-
-        order = mongoOps.findById(order.getOrderPk(), Order.class);
-
-        assertThat(order)
-                .as("check Activity summary has been added to related order")
+        assertThat(actualActivity)
+                .as("check Activity")
                 .isNotNull()
-                .extracting(Order::getActivities, as(InstanceOfAssertFactories.LIST))
-                .containsExactly(new ActivitySummary(activity));
+                .extracting(Activity::getRegionId)
+                .isEqualTo(activity.getRegionId());
+
+        assertThat(actualActivity)
+                .as("check Activity order name")
+                .isNotNull()
+                .extracting(Activity::getOrderName)
+                .isEqualTo(order.getName());
+
+        Order actualOrder = mongoOps.findById(order.getOrderPk(), Order.class);
+
+        assertThat(actualOrder)
+                .as("check Activity summary has been added to related order")
+                .containsSummary(activity);
 
     }
 
@@ -132,60 +129,61 @@ public class ActivityRepositoryTest {
 
         mongoOps.insertAll(orders);
 
-        Activity activity = dataUtil.defaultActivity()
-                .order(new OrderSummary(orders.get(0)))
+        Activity originalActivity = dataUtil.defaultActivity()
+                .orderPk(orders.get(0).getOrderPk())
+                .regionId(1)
+                .state(ActivityState.CLOSED)
                 .build();
-        activityRepository.save(activity);
+        activityRepository.save(originalActivity);
 
-        activity = dataUtil.defaultActivity()
-                .order(new OrderSummary(orders.get(1)))
+        Activity modifiedActivity = dataUtil.defaultActivity()
+                .orderPk(orders.get(1).getOrderPk())
+                .regionId(2)
+                .state(ActivityState.ALLOCATED)
                 .build();
-        activityRepository.save(activity);
+        activityRepository.save(modifiedActivity);
 
-        Order expectedOrder1 = mongoOps.findById(orders.get(0).getOrderPk(), Order.class);
-        Order expectedOrder2 = mongoOps.findById(orders.get(1).getOrderPk(), Order.class);
+        Order actualOrder1 = mongoOps.findById(orders.get(0).getOrderPk(), Order.class);
+        Order actualOrder2 = mongoOps.findById(orders.get(1).getOrderPk(), Order.class);
 
-        assertThat(expectedOrder1)
+        assertThat(actualOrder1)
                 .as("check Activity summary has been removed from previously-related order")
                 .isNotNull()
-                .extracting(Order::getActivities, as(InstanceOfAssertFactories.LIST))
-                .hasSize(0);
+                .hasZeroSummaries();
 
-        assertThat(expectedOrder2)
+        assertThat(actualOrder2)
                 .as("check Activity summary has been added to related order")
                 .isNotNull()
-                .extracting(Order::getActivities, as(InstanceOfAssertFactories.LIST))
-                .containsExactly(new ActivitySummary(activity));
+                .containsSummary(modifiedActivity);
 
     }
 
     @Test
     @DisplayName("Change to summary fields")
     void saveExistingActivityWithChangeToSummaryFields() {
-        List<Order> orders = dataUtil.getOrders(1);
-
-        mongoOps.insertAll(orders);
+        Order order = dataUtil.defaultOrder().build();
+        mongoOps.insert(order);
 
         Activity activity = dataUtil.defaultActivity()
-                .order(new OrderSummary(orders.get(0)))
+                .orderPk(order.getOrderPk())
                 .regionId(1)
+                .state(ActivityState.CLOSED)
                 .build();
         activityRepository.save(activity);
 
         Activity modifiedActivity = dataUtil.defaultActivity()
-                .order(new OrderSummary(orders.get(0)))
+                .orderPk(order.getOrderPk())
                 .regionId(2)
-                .state(Activity.ActivityState.JEOPARDY)
+                .state(ActivityState.JEOPARDY)
                 .build();
-        activityRepository.save(activity);
+        activityRepository.save(modifiedActivity);
 
-        Order expectedOrder = mongoOps.findById(orders.get(0).getOrderPk(), Order.class);
+        Order expectedOrder = mongoOps.findById(order.getOrderPk(), Order.class);
 
         assertThat(expectedOrder)
                 .as("check Activity summary is has been modified on the related order")
                 .isNotNull()
-                .extracting(Order::getActivities, as(InstanceOfAssertFactories.LIST))
-                .containsExactly(new ActivitySummary(modifiedActivity));
+                .containsSummary(modifiedActivity);
 
     }
 
@@ -196,7 +194,7 @@ public class ActivityRepositoryTest {
         mongoOps.insert(order);
 
         Activity activity = dataUtil.defaultActivity()
-                .order(new OrderSummary(order))
+                .orderPk(order.getOrderPk())
                 .build();
 
         activityRepository.save(activity);
@@ -210,8 +208,9 @@ public class ActivityRepositoryTest {
         assertThat(modifiedOrder)
                 .as("check Activity has been removed from Order")
                 .isNotNull()
-                .extracting(Order::getActivities, as(InstanceOfAssertFactories.LIST))
-                .hasSize(0);
+                .hasZeroSummaries();
     }
+
+
 
 }

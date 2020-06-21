@@ -1,6 +1,8 @@
 package uk.dioxic.wfmt.repository;
 
 import uk.dioxic.wfmt.model.Activity;
+import uk.dioxic.wfmt.model.Order;
+import uk.dioxic.wfmt.model.Order.OrderPk;
 import uk.dioxic.wfmt.repository.fragments.ActivityCustomizedRepository;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
@@ -11,7 +13,6 @@ import java.util.List;
 public interface ActivityRepository extends MongoRepository<Activity, String>, ActivityCustomizedRepository<Activity, String> {
 
     List<Activity> findByRegionId(Integer regionId);
-    List<Activity> findByOrderOrderId(Integer orderId);
-    List<Activity> findByOrderOrderIdAndOrderCircuitId(Integer orderId, Integer circuitId);
+    List<Activity> findByOrderPk(OrderPk orderPk);
 
 }

@@ -15,7 +15,7 @@ public interface OrderCustomizedRepository<T, ID> {
      */
     <S extends T> S save(S entity);
 
-    void addActivity(Activity activity);
+    Order addActivity(Activity activity);
 
     void removeActivity(Activity activity);
 

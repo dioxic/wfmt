@@ -1,14 +1,9 @@
 package uk.dioxic.wfmt;
 
-import uk.dioxic.wfmt.model.Activity;
+import uk.dioxic.wfmt.model.*;
 import uk.dioxic.wfmt.model.Activity.ActivityBuilder;
-import uk.dioxic.wfmt.model.OrderSummary;
-import uk.dioxic.wfmt.model.Order;
-import uk.dioxic.wfmt.model.ActivitySummary;
 import uk.dioxic.wfmt.model.Order.OrderBuilder;
-import uk.dioxic.wfmt.model.Region;
 import uk.dioxic.wfmt.model.Region.RegionBuilder;
-import uk.dioxic.wfmt.model.User;
 import uk.dioxic.wfmt.model.User.UserBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoOperations;
@@ -53,8 +48,9 @@ public class DataUtil {
     public ActivityBuilder defaultActivity() {
         return Activity.builder()
                 .activityId("A1")
-                .actualEcc("ecc")
-//                .order(new OrderSummary(defaultOrder().build()))
+                .field1("f1")
+                .field2("f2")
+                .field3("f3")
                 .regionId(1)
                 .state(Activity.ActivityState.ALLOCATED);
     }
@@ -118,7 +114,8 @@ public class DataUtil {
         return IntStream.range(0, number)
                 .mapToObj(id -> defaultActivity()
                         .activityId("A" + id)
-                        .order(new OrderSummary(order))
+                        .orderPk(order.getOrderPk())
+                        .orderName(order.getName())
                         .build())
                 .collect(Collectors.toList());
     }
@@ -130,5 +127,6 @@ public class DataUtil {
                         .build())
                 .collect(Collectors.toList());
     }
+
 
 }

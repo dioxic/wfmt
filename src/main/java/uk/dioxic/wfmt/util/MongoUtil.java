@@ -19,7 +19,7 @@ public class MongoUtil {
 //        return MongoClients.create(mcs);
 //    }
 
-    public static final Query queryById(Object id) {
+    public static Query queryById(Object id) {
         return query(where("_id").is(id));
     }
 

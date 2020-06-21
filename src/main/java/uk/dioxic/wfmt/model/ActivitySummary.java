@@ -1,5 +1,6 @@
 package uk.dioxic.wfmt.model;
 
+import lombok.Builder;
 import lombok.Data;
 import lombok.NonNull;
 import org.springframework.data.annotation.PersistenceConstructor;
@@ -7,6 +8,7 @@ import org.springframework.data.annotation.PersistenceConstructor;
 import java.util.Objects;
 
 @Data
+@Builder
 public class ActivitySummary {
     private final String activityId;
     private final Integer regionId;

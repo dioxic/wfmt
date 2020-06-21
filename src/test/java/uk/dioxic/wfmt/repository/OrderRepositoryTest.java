@@ -3,8 +3,8 @@ package uk.dioxic.wfmt.repository;
 import uk.dioxic.wfmt.DataUtil;
 import uk.dioxic.wfmt.config.MongoConfiguration;
 import uk.dioxic.wfmt.model.Activity;
-import uk.dioxic.wfmt.model.Order;
 import uk.dioxic.wfmt.model.ActivitySummary;
+import uk.dioxic.wfmt.model.Order;
 import uk.dioxic.wfmt.model.Order.OrderPk;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -18,9 +18,9 @@ import org.springframework.data.mongodb.core.query.Query;
 import java.util.List;
 import java.util.Optional;
 
+import static uk.dioxic.wfmt.assertions.CustomAssertions.assertThat;
 import static uk.dioxic.wfmt.model.Activity.ActivityState.*;
 import static java.util.function.Predicate.isEqual;
-import static org.assertj.core.api.Assertions.assertThat;
 
 @DataMongoTest
 @Import({DataUtil.class, MongoConfiguration.class})
@@ -43,20 +43,33 @@ public class OrderRepositoryTest {
     @Test
     @DisplayName("Find by regionId")
     void findByRegionId() {
+        ActivitySummary activity1 = ActivitySummary.builder()
+                .activityId("A1")
+                .regionId(1)
+                .state(ALLOCATED)
+                .build();
+
+        ActivitySummary activity2 = ActivitySummary.builder()
+                .activityId("A2")
+                .regionId(2)
+                .state(ALLOCATED)
+                .build();
+
+        ActivitySummary activity3 = ActivitySummary.builder()
+                .activityId("A3")
+                .regionId(3)
+                .state(ALLOCATED)
+                .build();
+
+
         Order order1 = Order.builder()
                 .orderPk(new OrderPk(111,111))
-                .activities(List.of(
-                        new ActivitySummary("A1",1, ALLOCATED),
-                        new ActivitySummary("A2",2, ALLOCATED),
-                        new ActivitySummary("A3",3, ALLOCATED)
-                ))
+                .activities(List.of(activity1,activity2,activity3))
                 .build();
 
         Order order2 = Order.builder()
                 .orderPk(new OrderPk(222,222))
-                .activities(List.of(
-                        new ActivitySummary("A1",1, ALLOCATED)
-                ))
+                .activities(List.of(activity1))
                 .build();
 
         mongoOps.insert(order1);
@@ -89,25 +102,25 @@ public class OrderRepositoryTest {
 
         Order actual = mongoOps.findById(expected.getOrderPk(), Order.class);
 
-        assertThat(actual).isEqualTo(expected);
+        assertThat(actual).isEqualToIgnoringGivenFields(expected, "state", "activities");
     }
 
     @Test
     @DisplayName("Modify order summary fields")
     void saveExistingOrderWithActivities() {
-        Order order = dataUtil.defaultOrder()
+        Order originalOrder = dataUtil.defaultOrder()
                 .name("original name")
                 .build();
-        List<Activity> activities = dataUtil.getActivitiesWithOrder(5, order);
+        List<Activity> activities = dataUtil.getActivitiesWithOrder(5, originalOrder);
 
-        mongoOps.insert(order);
+        orderRepository.save(originalOrder);
         mongoOps.insertAll(activities);
 
-        assertThat(mongoOps.find(new Query(), Activity.class))
+
+        mongoOps.find(new Query(), Activity.class).forEach(a -> assertThat(a)
                 .as("check original order name correct")
-                .extracting(a -> a.getOrder().getName())
-                .hasSize(5)
-                .allMatch(isEqual(order.getName()));
+                .hasSummary(originalOrder)
+        );
 
         Order modifiedOrder = dataUtil.defaultOrder()
                 .name("modified name")
@@ -115,11 +128,10 @@ public class OrderRepositoryTest {
 
         orderRepository.save(modifiedOrder);
 
-        assertThat(mongoOps.find(new Query(), Activity.class))
-                .as("check order name has been changed on all related activities")
-                .extracting(a -> a.getOrder().getName())
-                .hasSize(5)
-                .allMatch(isEqual(modifiedOrder.getName()));
+        mongoOps.find(new Query(), Activity.class).forEach(a -> assertThat(a)
+                .as("check order name has been modified")
+                .hasSummary(modifiedOrder)
+        );
     }
 
 }

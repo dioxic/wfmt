@@ -1,9 +1,5 @@
 package uk.dioxic.wfmt.repository.fragments;
 
-import uk.dioxic.wfmt.model.Activity;
-import uk.dioxic.wfmt.model.OrderSummary;
-import uk.dioxic.wfmt.model.Order;
-import uk.dioxic.wfmt.repository.OrderRepository;
 import lombok.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -12,14 +8,17 @@ import org.springframework.data.mongodb.core.FindAndModifyOptions;
 import org.springframework.data.mongodb.core.MongoOperations;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.data.mongodb.core.query.UpdateDefinition;
 import org.springframework.transaction.annotation.Transactional;
-import uk.dioxic.wfmt.model.ActivitySummary;
-import uk.dioxic.wfmt.util.MongoUtil;
+import uk.dioxic.wfmt.model.Activity;
+import uk.dioxic.wfmt.model.Order;
+import uk.dioxic.wfmt.repository.OrderRepository;
 
 import java.util.Objects;
 
 import static org.springframework.data.mongodb.core.query.Criteria.where;
 import static org.springframework.data.mongodb.core.query.Query.query;
+import static uk.dioxic.wfmt.util.MongoUtil.queryById;
 
 public class ActivityCustomizedRepositoryImpl implements ActivityCustomizedRepository<Activity, String> {
 
@@ -34,38 +33,29 @@ public class ActivityCustomizedRepositoryImpl implements ActivityCustomizedRepos
     @Transactional
     public <S extends Activity> S save(@NonNull S activity) {
 
+        Query query = queryById(activity.getActivityId());
+        includeActivitySummaryFields(query);
+        includeOrderFkFields(query);
+
         // save the activity - only update fields which are not null
         Activity prevActivity = mongoOps.findAndModify(
-                Activity.includeSummaryFields(MongoUtil.queryById(activity.getActivityId())),
-                activity.getSaveUpdateDefinition(),
+                query,
+                getSaveUpdateDefinition(activity),
                 FindAndModifyOptions.options().upsert(true),
                 Activity.class);
 
-        Query query = new Query();
-        query.fields().include("");
-
         // check if order collection needs updating
         if (prevActivity == null) {
-            if (activity.getOrder() != null) {
-                // add activity summary to the order
-                orderRepository.addActivity(activity);
-            }
+            // add activity summary to the order
+            addActivityToOrderAndUpdateSummary(activity);
         } else {
-            OrderSummary currOrder = activity.getOrder();
-            OrderSummary prevOrder = prevActivity.getOrder();
-
-            if (!Objects.equals(currOrder, prevOrder)) {
-                if (prevOrder != null) {
-                    // remove activity from previous order
-                    orderRepository.removeActivity(activity, prevOrder.getOrderPk());
-                }
-                if (currOrder != null) {
-                    orderRepository.addActivity(activity);
-                }
+            if (!Objects.equals(activity.getOrderPk(), prevActivity.getOrderPk())) {
+                orderRepository.removeActivity(prevActivity);
+                addActivityToOrderAndUpdateSummary(activity);
             }
 
             // check if activity summary needs changing on the related order
-            if (!ActivitySummary.summaryFieldsEqual(activity, prevActivity)) {
+            if (!summaryFieldsEqual(activity, prevActivity)) {
                 orderRepository.updateActivity(activity);
             }
         }
@@ -101,15 +91,83 @@ public class ActivityCustomizedRepositoryImpl implements ActivityCustomizedRepos
         mongoOps.remove(new Query(), Activity.class);
     }
 
-    public void updateOrderSummary(Order order) {
-        LOG.debug("Updating order summary for {} on related activities", order.getOrderPk());
-        mongoOps.updateMulti(query(where("order.orderId")
-                        .is(order.getOrderPk().getOrderId())
-                        .and("order.circuitId")
-                        .is(order.getOrderPk().getCircuitId())),
-                new Update().set("order.name", order.getName()),
-                Activity.class
-        );
+    public void updateOrderSummary(Order orderSummary, Activity activity) {
+        if (orderSummary != null && activity != null) {
+            LOG.debug("Updating order summary for {} on activity {}", orderSummary.getOrderPk(), activity.getActivityId());
+            mongoOps.updateFirst(
+                    queryById(activity.getActivityId()),
+                    getOrderSummaryUpdateDefinition(orderSummary),
+                    Activity.class
+            );
+        }
+    }
+
+    public void updateOrderSummary(Order orderSummary) {
+        if (orderSummary != null) {
+            LOG.debug("Updating order summary for {} on all related activities", orderSummary.getOrderPk());
+            mongoOps.updateMulti(
+                    query(where("orderPk").is(orderSummary.getOrderPk())),
+                    getOrderSummaryUpdateDefinition(orderSummary),
+                    Activity.class
+            );
+        }
+    }
+
+    private void addActivityToOrderAndUpdateSummary(Activity activity) {
+        Order order = orderRepository.addActivity(activity);
+        updateOrderSummary(order, activity);
+    }
+
+    /**
+     * The update definition for saving an {@link Activity}.
+     * We save everything apart from the order summary fields which are set retrospectively.
+     * @return update definition
+     */
+    private UpdateDefinition getSaveUpdateDefinition(Activity activity) {
+
+        // we set all fields except for the primary key and the Order summary fields (i.e. order.name)
+        return new Update()
+                .set("regionId", activity.getRegionId())
+                .set("orderPk", activity.getOrderPk())
+                .set("state", activity.getState())
+                .set("field1", activity.getField1())
+                .set("field2", activity.getField2())
+                .set("field3", activity.getField3())
+                .set("priority", activity.getPriority());
+    }
+
+    /**
+     * The update definition for saving the {@link Order} summary fields.
+     * @param order order
+     * @return update definition
+     */
+    private static UpdateDefinition getOrderSummaryUpdateDefinition(Order order) {
+        return new Update()
+                .set("orderName", order.getName());
+    }
+
+    /**
+     * Applies a projection to the query to inlude the {@link Activity} summary fields.
+     * @param query input query
+     */
+    private static void includeActivitySummaryFields(Query query) {
+        query.fields()
+                .include("state")
+                .include("regionId");
+    }
+
+    /**
+     * Applies a projection to the query to inlude the {@link Order} foreign key fields.
+     * @param query input query
+     */
+    private static void includeOrderFkFields(Query query) {
+        query.fields()
+                .include("orderPk");
+    }
+
+    private static boolean summaryFieldsEqual(@NonNull Activity activity1, @NonNull Activity activity2) {
+        return Objects.equals(activity1.getRegionId(), activity2.getRegionId()) &&
+                Objects.equals(activity1.getState(), activity2.getState());
     }
 
 }
