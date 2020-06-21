@@ -1,14 +1,14 @@
 package uk.dioxic.wfmt.repository;
 
-import uk.dioxic.wfmt.DataUtil;
-import uk.dioxic.wfmt.config.MongoConfiguration;
-import uk.dioxic.wfmt.model.Region;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.mongodb.core.MongoOperations;
+import uk.dioxic.wfmt.DataUtil;
+import uk.dioxic.wfmt.config.MongoConfiguration;
+import uk.dioxic.wfmt.model.Region;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

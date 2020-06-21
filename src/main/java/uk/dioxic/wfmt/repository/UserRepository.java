@@ -1,8 +1,8 @@
 package uk.dioxic.wfmt.repository;
 
-import uk.dioxic.wfmt.model.User;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
+import uk.dioxic.wfmt.model.User;
 
 import java.util.List;
 

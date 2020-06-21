@@ -1,11 +1,5 @@
 package uk.dioxic.wfmt.repository;
 
-import uk.dioxic.wfmt.DataUtil;
-import uk.dioxic.wfmt.config.MongoConfiguration;
-import uk.dioxic.wfmt.model.Activity;
-import uk.dioxic.wfmt.model.ActivitySummary;
-import uk.dioxic.wfmt.model.Order;
-import uk.dioxic.wfmt.model.Order.OrderPk;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -14,13 +8,18 @@ import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.mongodb.core.MongoOperations;
 import org.springframework.data.mongodb.core.query.Query;
+import uk.dioxic.wfmt.DataUtil;
+import uk.dioxic.wfmt.config.MongoConfiguration;
+import uk.dioxic.wfmt.model.Activity;
+import uk.dioxic.wfmt.model.ActivitySummary;
+import uk.dioxic.wfmt.model.Order;
+import uk.dioxic.wfmt.model.Order.OrderPk;
 
 import java.util.List;
 import java.util.Optional;
 
 import static uk.dioxic.wfmt.assertions.CustomAssertions.assertThat;
-import static uk.dioxic.wfmt.model.Activity.ActivityState.*;
-import static java.util.function.Predicate.isEqual;
+import static uk.dioxic.wfmt.model.Activity.ActivityState.ALLOCATED;
 
 @DataMongoTest
 @Import({DataUtil.class, MongoConfiguration.class})

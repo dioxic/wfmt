@@ -1,13 +1,13 @@
 package uk.dioxic.wfmt;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.MongoOperations;
+import org.springframework.stereotype.Component;
 import uk.dioxic.wfmt.model.*;
 import uk.dioxic.wfmt.model.Activity.ActivityBuilder;
 import uk.dioxic.wfmt.model.Order.OrderBuilder;
 import uk.dioxic.wfmt.model.Region.RegionBuilder;
 import uk.dioxic.wfmt.model.User.UserBuilder;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.mongodb.core.MongoOperations;
-import org.springframework.stereotype.Component;
 
 import java.util.Collections;
 import java.util.List;

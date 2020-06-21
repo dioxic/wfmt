@@ -1,11 +1,5 @@
 package uk.dioxic.wfmt.repository.fragments;
 
-import org.springframework.data.mongodb.core.query.UpdateDefinition;
-import uk.dioxic.wfmt.model.Activity;
-import uk.dioxic.wfmt.model.ActivitySummary;
-import uk.dioxic.wfmt.model.Order;
-import uk.dioxic.wfmt.model.Order.OrderPk;
-import uk.dioxic.wfmt.repository.ActivityRepository;
 import lombok.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -14,15 +8,21 @@ import org.springframework.data.mongodb.core.FindAndModifyOptions;
 import org.springframework.data.mongodb.core.MongoOperations;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.data.mongodb.core.query.UpdateDefinition;
 import org.springframework.transaction.annotation.Transactional;
+import uk.dioxic.wfmt.model.Activity;
+import uk.dioxic.wfmt.model.ActivitySummary;
+import uk.dioxic.wfmt.model.Order;
+import uk.dioxic.wfmt.model.Order.OrderPk;
+import uk.dioxic.wfmt.repository.ActivityRepository;
 import uk.dioxic.wfmt.repository.OrderRepository;
 
 import java.util.Collections;
 import java.util.Objects;
 
-import static uk.dioxic.wfmt.util.MongoUtil.queryById;
 import static org.springframework.data.mongodb.core.query.Criteria.where;
 import static org.springframework.data.mongodb.core.query.Query.query;
+import static uk.dioxic.wfmt.util.MongoUtil.queryById;
 
 public class OrderCustomizedRepositoryImpl implements OrderCustomizedRepository<Order, OrderPk> {
 

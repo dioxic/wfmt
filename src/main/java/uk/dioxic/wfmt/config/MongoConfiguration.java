@@ -2,8 +2,8 @@ package uk.dioxic.wfmt.config;
 
 import com.mongodb.ConnectionString;
 import com.mongodb.MongoClientSettings;
+import com.mongodb.ReadConcern;
 import com.mongodb.WriteConcern;
-import com.mongodb.connection.ClusterSettings;
 import org.bson.UuidRepresentation;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -33,6 +33,7 @@ public class MongoConfiguration extends AbstractMongoClientConfiguration {
                 .retryWrites(true)
                 .retryReads(true)
                 .writeConcern(WriteConcern.MAJORITY)
+                .readConcern(ReadConcern.MAJORITY)
                 .applyConnectionString(new ConnectionString(connectionUri));
     }
 
