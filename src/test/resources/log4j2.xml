@@ -9,7 +9,13 @@
         <Logger name="org.mongodb.driver" level="info" additivity="false">
             <AppenderRef ref="Console"/>
         </Logger>
-        <Logger name="com.bt.wfmt" level="debug" additivity="false">
+        <Logger name="uk.dioxic.wfmt" level="debug" additivity="false">
+            <AppenderRef ref="Console"/>
+        </Logger>
+        <Logger name="org.springframework.retry" level="debug" additivity="false">
+            <AppenderRef ref="Console"/>
+        </Logger>
+        <Logger name="org.springframework.data.mongodb.MongoTransactionManager" level="debug" additivity="false">
             <AppenderRef ref="Console"/>
         </Logger>
         <Root level="info">

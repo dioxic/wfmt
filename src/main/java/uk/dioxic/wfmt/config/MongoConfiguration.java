@@ -12,8 +12,10 @@ import org.springframework.data.mongodb.MongoDatabaseFactory;
 import org.springframework.data.mongodb.MongoTransactionManager;
 import org.springframework.data.mongodb.config.AbstractMongoClientConfiguration;
 import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
+import org.springframework.retry.annotation.EnableRetry;
 
 @Configuration
+@EnableRetry
 @EnableMongoRepositories(basePackages = "uk.dioxic.wfmt.repository")
 public class MongoConfiguration extends AbstractMongoClientConfiguration {
 
@@ -30,7 +32,7 @@ public class MongoConfiguration extends AbstractMongoClientConfiguration {
         builder
                 .uuidRepresentation(UuidRepresentation.STANDARD)
                 .applicationName("wfmt-POC")
-                .retryWrites(true)
+                .retryWrites(false)
                 .retryReads(true)
                 .writeConcern(WriteConcern.MAJORITY)
                 .readConcern(ReadConcern.MAJORITY)

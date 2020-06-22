@@ -20,14 +20,8 @@ val junitVersion="5.6.2"
 val assertjVersion="3.16.1"
 
 dependencies {
-//    implementation(platform("org.apache.logging.log4j:log4j-bom:$log4Version"))
-//    implementation("org.apache.logging.log4j:log4j-core")
-//    implementation("org.apache.logging.log4j:log4j-api")
-//    implementation("org.apache.logging.log4j:log4j-slf4j-impl")
-    //implementation("org.mongodb:mongodb-driver-sync:$mongodbVersion")
-//    implementation("org.springframework.boot:spring-boot-starter") {
-//        exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
-//    }
+    implementation("org.springframework.retry:spring-retry")
+    implementation("org.springframework:spring-aspects")
     implementation("org.springframework.boot:spring-boot-starter-data-mongodb") {
         exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
     }
@@ -46,7 +40,3 @@ dependencies {
 tasks.withType<Test> {
     useJUnitPlatform()
 }
-//
-//configure<JavaPluginConvention> {
-//    sourceCompatibility = JavaVersion.VERSION_11
-//}
