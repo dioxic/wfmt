@@ -3,8 +3,6 @@ package uk.dioxic.wfmt;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.assertj.core.api.Assertions;
-import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,10 +19,14 @@ import uk.dioxic.wfmt.config.MongoConfiguration;
 import uk.dioxic.wfmt.model.User;
 
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.springframework.data.mongodb.core.query.Update.update;
 import static uk.dioxic.wfmt.util.MongoUtil.queryById;
 
@@ -38,15 +40,11 @@ public class RetryTest {
     private MockRepository repository;
 
     @Autowired
-    private MongoOperations mongoOps;
-
-    @Autowired
     private DataUtil dataUtil;
 
     @BeforeEach
     void setup() {
         dataUtil.clearData();
-
     }
 
     @Test
@@ -70,14 +68,11 @@ public class RetryTest {
         assertThat(exceptions)
                 .as("check exception thrown")
                 .hasSize(1)
-                .allMatch(t -> {
-                    LOG.error(t);
-                    return t instanceof UncategorizedMongoDbException;
-                }, "check correct exception type");
+                .allMatch(t -> t instanceof UncategorizedMongoDbException, "check correct exception type");
     }
 
     @Test
-    void testRetrableConcurrentOperation() throws InterruptedException {
+    void testRetryableConcurrentOperation() throws InterruptedException {
         Callable<String> updateTask1 = () -> {
             repository.updateUsersWithRetry(1, 2, 200, "Bob");
             return "Success";
@@ -142,6 +137,7 @@ public class RetryTest {
 
         @Retryable(
                 value = {UncategorizedMongoDbException.class},
+                exceptionExpression = "#{@mongoTransactionExceptionChecker.canRetry(#root)}",
                 maxAttempts = 2,
                 backoff = @Backoff(delay = 500))
         @Transactional
@@ -153,6 +149,7 @@ public class RetryTest {
 
         @Retryable(
                 value = {UncategorizedMongoDbException.class},
+                exceptionExpression = "#{@mongoTransactionExceptionChecker.canRetry(#root)}",
                 maxAttempts = 2,
                 backoff = @Backoff(delay = 500))
         @Transactional

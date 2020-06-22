@@ -4,14 +4,11 @@ import lombok.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.mongodb.UncategorizedMongoDbException;
 import org.springframework.data.mongodb.core.FindAndModifyOptions;
 import org.springframework.data.mongodb.core.MongoOperations;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.data.mongodb.core.query.UpdateDefinition;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
 import org.springframework.transaction.annotation.Transactional;
 import uk.dioxic.wfmt.model.Activity;
 import uk.dioxic.wfmt.model.Order;
@@ -34,10 +31,6 @@ public class ActivityCustomizedRepositoryImpl implements ActivityCustomizedRepos
     private OrderRepository orderRepository;
 
     @Transactional
-    @Retryable(
-            value = { UncategorizedMongoDbException.class },
-            maxAttempts = 2,
-            backoff = @Backoff(delay = 5000))
     public <S extends Activity> S save(@NonNull S activity) {
 
         Query query = queryById(activity.getActivityId());

@@ -32,7 +32,7 @@ public class MongoConfiguration extends AbstractMongoClientConfiguration {
         builder
                 .uuidRepresentation(UuidRepresentation.STANDARD)
                 .applicationName("wfmt-POC")
-                .retryWrites(false)
+                .retryWrites(true)
                 .retryReads(true)
                 .writeConcern(WriteConcern.MAJORITY)
                 .readConcern(ReadConcern.MAJORITY)
@@ -41,7 +41,12 @@ public class MongoConfiguration extends AbstractMongoClientConfiguration {
 
     @Bean
     MongoTransactionManager transactionManager(MongoDatabaseFactory dbFactory) {
-        return new RetryableMongoTransactionManager(dbFactory);
+        return new MongoTransactionManager(dbFactory);
+    }
+
+    @Bean
+    MongoTransactionExceptionChecker mongoTransactionExceptionChecker() {
+        return new MongoTransactionExceptionChecker();
     }
 
 }
