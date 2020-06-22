@@ -9,7 +9,7 @@ import org.springframework.data.mongodb.core.MongoOperations;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.data.mongodb.core.query.UpdateDefinition;
-import org.springframework.transaction.annotation.Transactional;
+import uk.dioxic.wfmt.annotation.TransactionalWithRetry;
 import uk.dioxic.wfmt.model.Activity;
 import uk.dioxic.wfmt.model.Order;
 import uk.dioxic.wfmt.repository.OrderRepository;
@@ -30,7 +30,7 @@ public class ActivityCustomizedRepositoryImpl implements ActivityCustomizedRepos
     @Autowired
     private OrderRepository orderRepository;
 
-    @Transactional
+    @TransactionalWithRetry
     public <S extends Activity> S save(@NonNull S activity) {
 
         Query query = queryById(activity.getActivityId());
@@ -62,7 +62,6 @@ public class ActivityCustomizedRepositoryImpl implements ActivityCustomizedRepos
         return activity;
     }
 
-    @Transactional
     public void deleteById(@NonNull String id) {
         /*
              could be done by searching for Orders with the embedded activityId
@@ -71,7 +70,7 @@ public class ActivityCustomizedRepositoryImpl implements ActivityCustomizedRepos
         throw new UnsupportedOperationException("Not implemented");
     }
 
-    @Transactional
+    @TransactionalWithRetry
     public void delete(@NonNull Activity activity) {
         mongoOps.remove(activity);
         orderRepository.removeActivity(activity);

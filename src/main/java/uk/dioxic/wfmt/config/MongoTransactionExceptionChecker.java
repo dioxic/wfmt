@@ -3,9 +3,6 @@ package uk.dioxic.wfmt.config;
 import com.mongodb.MongoException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.data.mongodb.MongoDatabaseFactory;
-import org.springframework.data.mongodb.MongoTransactionManager;
-import org.springframework.stereotype.Component;
 
 /**
  * Determines whether a transaction exception can be retried.

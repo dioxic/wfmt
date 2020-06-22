@@ -9,7 +9,7 @@ import org.springframework.data.mongodb.core.MongoOperations;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.data.mongodb.core.query.UpdateDefinition;
-import org.springframework.transaction.annotation.Transactional;
+import uk.dioxic.wfmt.annotation.TransactionalWithRetry;
 import uk.dioxic.wfmt.model.Activity;
 import uk.dioxic.wfmt.model.ActivitySummary;
 import uk.dioxic.wfmt.model.Order;
@@ -34,7 +34,7 @@ public class OrderCustomizedRepositoryImpl implements OrderCustomizedRepository<
     @Autowired
     private ActivityRepository activityRepository;
 
-    @Transactional
+    @TransactionalWithRetry
     public <S extends Order> S save(@NonNull S order) {
 
         // save the order and return the previous version of the order
